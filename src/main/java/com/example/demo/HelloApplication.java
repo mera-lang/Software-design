@@ -19,8 +19,8 @@ public class HelloApplication extends Application {
         Path path =  Paths.get("src/main/java/com/example/demo/Calculate.fxml");
         System.out.println("Загружаем: " + path.toAbsolutePath());
 
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/example/demo/Calculate.fxml"));
-
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("Calculate.fxml"));
+        System.out.println(fxmlLoader);
         Parent parent = fxmlLoader.load();
 
         Scene scene = new Scene(parent);
