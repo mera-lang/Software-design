@@ -1,10 +1,31 @@
 package MVVMCalculator;
 
+import MVVMCalculator.commands.*;
+
 public class CalculatorModel {
     private double firstOperand = 0;      // первое введённое число
     private double secondOperand = 0;     // второе введённое число
     private String pendingOperation = "";  // операция, которую нужно выполнить
     private boolean waitingForSecondOperand = false;  // ждём второе число?
+    private Command pendingCommand = null;
+
+
+    public static Command getCommand(String symbol){
+        switch (symbol) {
+            case "+": return new AddCommand();
+            case "-": return new SubtractCommand();
+            case "*": return new MultiplyCommand();
+            case "/": return new DivideCommand();
+            case "=": return new EqualsCommand();
+            case "C": return new ClearCommand();
+            default: return null;
+        }
+    }
+    public void setCommand(Command command){
+        if(pendingCommand != null && waitingForSecondOperand){
+            calculate();
+        }
+    }
 
     // Установить текущее вводимое число
     public void setCurrentNumber(double number) {
@@ -16,7 +37,7 @@ public class CalculatorModel {
     }
 
     // Получить текущее отображаемое число
-    public double getCurrentNumber() {
+    public double getCurrentNumber(double number) {
         if (waitingForSecondOperand) {
             return secondOperand;
         } else {
@@ -25,51 +46,28 @@ public class CalculatorModel {
     }
 
     // Выбрать операцию (+, -, *, /)
-    public void setOperation(String operation) {
-        // Если уже есть ожидающая операция и мы вводили второе число — выполняем её
-        if (!pendingOperation.isEmpty() && waitingForSecondOperand) {
-            calculate();
-        }
-        pendingOperation = operation;
-        waitingForSecondOperand = true;
-    }
+
 
     // Выполнить вычисление
     public double calculate() {
-        double result = 0;
+        if (pendingCommand == null) return firstOperand;
 
-        switch (pendingOperation) {
-            case "+":
-                result = firstOperand + secondOperand;
-                break;
-            case "-":
-                result = firstOperand - secondOperand;
-                break;
-            case "*":
-                result = firstOperand * secondOperand;
-                break;
-            case "/":
-                if (secondOperand != 0) {
-                    result = firstOperand / secondOperand;
-                } else {
-                    throw new ArithmeticException("Деление на ноль");
-                }
-                break;
-            case "=":
-                result = secondOperand;
-                break;
-            default:
-                result = firstOperand;
-                break;
+        double result = pendingCommand.execute(firstOperand, secondOperand);
+
+        // Если это не операция очистки, обновляем операнды
+        if (!(pendingCommand instanceof ClearCommand)) {
+            firstOperand = result;
+            secondOperand = 0;
+        } else {
+            firstOperand = 0;
+            secondOperand = 0;
         }
 
-        // Результат становится первым операндом для следующих вычислений
-        firstOperand = result;
-        secondOperand = 0;
         waitingForSecondOperand = false;
-        pendingOperation = "";
+        pendingCommand = null;
 
         return result;
+
     }
 
     // Очистить всё
