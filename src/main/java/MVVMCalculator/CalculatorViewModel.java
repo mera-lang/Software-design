@@ -2,11 +2,14 @@ package MVVMCalculator;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import MVVMCalculator.commands.Command;
+import MVVMCalculator.CalculatorModel;
 
 public class CalculatorViewModel {
     private final CalculatorModel model;
     private final StringProperty display = new SimpleStringProperty("0");
     private boolean startNewNumber = true;  // начинаем ввод нового числа
+    private String lastCommand = "";
 
     public CalculatorViewModel() {
         this.model = new CalculatorModel();
@@ -33,26 +36,39 @@ public class CalculatorViewModel {
         model.setCurrentNumber(Double.parseDouble(display.get()));
     }
 
-    // Нажата операция (+, -, *, /)
-    public void onOperationClick(String operation) {
-        if (!startNewNumber) {
-            // Если мы вводили число, запоминаем его и ждём второе
-            model.setOperation(operation);
+    public void onCommandClick(String commandSymbol) {
+        // Обработка очистки
+        if (commandSymbol.equals("C")) {
+            model.clear();
+            display.set("0");
             startNewNumber = true;
+            lastCommand = "";
+            return;
+        }
+
+        // Получаем команду через фабричный метод модели
+        Command command = CalculatorModel.getCommand(commandSymbol);
+
+        if (command != null) {
+            if (!startNewNumber) {
+                model.setCommand(command);
+                lastCommand = commandSymbol;
+                startNewNumber = true;
+            }
         }
     }
+
+
 
     // Нажат "="
     public void onEquals() {
         if (!startNewNumber) {
-            // Сохраняем второе число
             model.setCurrentNumber(Double.parseDouble(display.get()));
         }
 
-        // Вычисляем результат
         double result = model.calculate();
 
-        // Показываем результат
+        // Форматируем результат (без .0 для целых чисел)
         if (result == (long) result) {
             display.set(String.valueOf((long) result));
         } else {
@@ -60,12 +76,14 @@ public class CalculatorViewModel {
         }
 
         startNewNumber = true;
+        lastCommand = "";
+
+        // Обновляем модель текущим результатом
+        model.setCurrentNumber(result);
+
     }
 
-    // Нажата "C" (очистка)
-    public void onClear() {
-        model.clear();
-        display.set("0");
-        startNewNumber = true;
+    public String getLastCommand() {
+        return lastCommand;
     }
 }
